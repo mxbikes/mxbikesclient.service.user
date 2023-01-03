@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -13,34 +14,45 @@ import (
 var lastAuth models.AuthResponse
 
 type Auth struct {
+	auth0Connection string
 }
 
-func NewAuthHandler() *Auth {
-	return &Auth{}
+func NewAuthHandler(auth0 string) *Auth {
+	return &Auth{auth0Connection: auth0}
 }
 
-func (e Auth) GetAccessToken() string {
+func (e Auth) GetAccessToken() (string, error) {
 	if valid(lastAuth) {
-		return lastAuth.AccessToken
+		return lastAuth.AccessToken, nil
 	}
 
-	return requestToken().AccessToken
+	newAuth, err := e.requestToken()
+	if err != nil {
+		return "", err
+	}
+
+	return newAuth.AccessToken, err
 }
 
-func requestToken() models.AuthResponse {
+func (e Auth) requestToken() (*models.AuthResponse, error) {
 	url := "https://dev-tm250wxm.us.auth0.com/oauth/token"
-	payload := strings.NewReader("")
+	payload := strings.NewReader(e.auth0Connection)
 	req, _ := http.NewRequest("POST", url, payload)
 	req.Header.Add("content-type", "application/json")
 	res, _ := http.DefaultClient.Do(req)
 
 	defer res.Body.Close()
+
 	body, _ := ioutil.ReadAll(res.Body)
+
+	if res.StatusCode == 401 {
+		return nil, errors.New("Unable to request access_token, unauthorized")
+	}
 
 	json.Unmarshal([]byte(body), &lastAuth)
 
 	lastAuth.ExpiresAt = time.Now().Add(time.Duration(time.Duration(lastAuth.ExpiresIn)) * time.Second)
-	return lastAuth
+	return &lastAuth, nil
 }
 
 func valid(auth models.AuthResponse) bool {

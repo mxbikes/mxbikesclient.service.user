@@ -1,9 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net"
 	"os"
 
+	"github.com/joho/godotenv"
 	"github.com/mxbikes/mxbikesclient.service.user/handlers"
 	protobuffer "github.com/mxbikes/protobuf/user"
 	"github.com/sirupsen/logrus"
@@ -13,8 +16,9 @@ import (
 )
 
 var (
-	logLevel = GetEnv("LOG_LEVEL", "info")
-	port     = GetEnv("PORT", ":4090")
+	logLevel              = GetEnv("LOG_LEVEL", "info")
+	port                  = GetEnv("PORT", ":4090")
+	auth0ConnectionString = getEnv("AUTH0")
 )
 
 func main() {
@@ -28,6 +32,8 @@ func main() {
 		},
 	}
 
+	fmt.Print(auth0ConnectionString)
+
 	//userHandler := handlers.NewUserHandler(*logger)
 	//userHandler.GetUserByID("auth0|63b2dff9e834e550f0e50e66")
 	/* Server */
@@ -39,7 +45,7 @@ func main() {
 
 	grpcServer := grpc.NewServer()
 
-	protobuffer.RegisterUserServiceServer(grpcServer, handlers.NewUserHandler(*logger))
+	protobuffer.RegisterUserServiceServer(grpcServer, handlers.NewUserHandler(*logger, auth0ConnectionString))
 	reflection.Register(grpcServer)
 
 	// Start grpc server on listener
@@ -54,4 +60,13 @@ func GetEnv(key, fallback string) string {
 		return value
 	}
 	return fallback
+}
+
+func getEnv(key string) string {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	return os.Getenv(key)
 }
