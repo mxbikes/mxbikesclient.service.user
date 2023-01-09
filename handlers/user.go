@@ -55,6 +55,11 @@ func (e *User) GetUserByID(ctx context.Context, req *protobuffer.GetUserByIDRequ
 	var user models.User
 	json.Unmarshal([]byte(body), &user)
 
+	if user.UserID == "" {
+		e.logger.WithFields(logrus.Fields{"prefix": "SERVICE.User_GetUserByID"}).Errorf("no user found on request ID: {%s}", req.ID)
+		return nil, status.Error(codes.Internal, "Error no user found on requested ID!")
+	}
+
 	e.logger.WithFields(logrus.Fields{"prefix": "SERVICE.User_GetUserByID"}).Infof("user with id: {%s} ", req.ID)
 
 	return &protobuffer.GetUserByIDResponse{User: models.UserToProto(&user)}, nil
