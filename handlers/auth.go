@@ -22,7 +22,7 @@ func NewAuthHandler(auth0 string) *Auth {
 }
 
 func (e Auth) GetAccessToken() (string, error) {
-	if valid(lastAuth) {
+	if IsValid(lastAuth) {
 		return lastAuth.AccessToken, nil
 	}
 
@@ -55,7 +55,7 @@ func (e Auth) requestToken() (*models.AuthResponse, error) {
 	return &lastAuth, nil
 }
 
-func valid(auth models.AuthResponse) bool {
+func IsValid(auth models.AuthResponse) bool {
 	if time.Now().After(auth.ExpiresAt) {
 		return false
 	}
