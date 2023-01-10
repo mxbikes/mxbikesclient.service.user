@@ -10,7 +10,7 @@ import (
 
 func TestIsValidNotExpired(t *testing.T) {
 	// Arrange
-	var expiresAt = time.Now()
+	var expiresAt = time.Now().Local().Add(time.Hour * time.Duration(2))
 
 	// Act
 	isValid := IsValid(models.AuthResponse{ExpiresAt: expiresAt})
